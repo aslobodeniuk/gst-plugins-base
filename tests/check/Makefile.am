@@ -74,7 +74,7 @@ check_audioconvert =
 endif
 
 if USE_PLUGIN_PLAYBACK
-check_playback = elements/decodebin elements/playbin \
+check_playback = elements/decodebin elements/decodebin3 elements/playbin \
     elements/playbin-complex elements/streamsynchronizer \
     elements/playsink
 else
@@ -524,6 +524,9 @@ elements_playbin_complex_CFLAGS = $(GST_PLUGINS_BASE_CFLAGS) $(GST_BASE_CFLAGS) 
 
 elements_decodebin_LDADD = $(GST_BASE_LIBS) $(LDADD)
 elements_decodebin_CFLAGS = $(GST_BASE_CFLAGS) $(AM_CFLAGS)
+
+elements_decodebin3_LDADD = $(GST_BASE_LIBS) $(LDADD)
+elements_decodebin3_CFLAGS = $(GST_BASE_CFLAGS) $(AM_CFLAGS)
 
 elements_encodebin_LDADD = $(top_builddir)/gst-libs/gst/pbutils/libgstpbutils-@GST_API_VERSION@.la $(GST_BASE_LIBS) $(LDADD)
 elements_encodebin_CFLAGS = $(GST_PLUGINS_BASE_CFLAGS) $(GST_BASE_CFLAGS) $(AM_CFLAGS)
