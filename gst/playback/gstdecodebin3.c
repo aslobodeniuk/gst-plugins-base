@@ -692,6 +692,10 @@ gst_decodebin3_dispose (GObject * object)
   GstDecodebin3 *dbin = (GstDecodebin3 *) object;
   GList *walk, *next;
 
+  g_mutex_clear (&dbin->factories_lock);
+  g_mutex_clear (&dbin->selection_lock);
+  g_mutex_clear (&dbin->input_lock);
+
   if (dbin->factories)
     gst_plugin_feature_list_free (dbin->factories);
   if (dbin->decoder_factories)
