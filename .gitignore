@@ -71,3 +71,4 @@ Build
 
 /build
 /subprojects
+/tests/check/elements/decodebin3

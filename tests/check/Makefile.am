@@ -273,7 +273,10 @@ noinst_HEADERS = \
 	libs/struct_i386_osx.h \
 	libs/struct_ppc32.h \
 	libs/struct_ppc64.h \
-	libs/struct_x86_64.h
+	libs/struct_x86_64.h \
+	elements/fakeaacparse.c \
+	elements/fakeh264parse.c \
+	elements/faketsdemux.c
 
 AM_CFLAGS = -I$(top_srcdir)/gst-libs -I$(top_builddir)/gst-libs \
 	$(GST_CFLAGS) $(GST_CHECK_CFLAGS) \
