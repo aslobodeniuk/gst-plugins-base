@@ -222,6 +222,7 @@ enum
   LAST_SIGNAL
 };
 
+#define DEFAULT_CHAINS_COMPLETED FALSE
 #define DEFAULT_SUBTITLE_ENCODING NULL
 #define DEFAULT_USE_BUFFERING     FALSE
 #define DEFAULT_LOW_PERCENT       10
@@ -237,7 +238,8 @@ enum
   PROP_SUBTITLE_ENCODING,
   PROP_SINK_CAPS,
   PROP_EXPOSE_ALL_STREAMS,
-  PROP_CONNECTION_SPEED
+  PROP_CONNECTION_SPEED,
+  PROP_CHAINS_COMPLETED
 };
 
 static GstBinClass *parent_class;
@@ -838,7 +840,15 @@ gst_parse_bin_class_init (GstParseBinClass * klass)
           0, G_MAXUINT64 / 1000, DEFAULT_CONNECTION_SPEED,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
-
+  /**
+   * GstParseBin::chains-completed:
+   *
+   * Returns TRUE if all the #GstParseChain are completed
+   */
+  g_object_class_install_property (gobject_klass, PROP_CHAINS_COMPLETED,
+      g_param_spec_boolean ("chains-completed", "Chains completed",
+          "If all the GstParseChains are completed",
+          DEFAULT_CHAINS_COMPLETED, G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
 
   klass->autoplug_continue =
       GST_DEBUG_FUNCPTR (gst_parse_bin_autoplug_continue);
@@ -1074,6 +1084,18 @@ gst_parse_bin_get_property (GObject * object, guint prop_id,
     case PROP_SUBTITLE_ENCODING:
       g_value_take_string (value, gst_parse_bin_get_subs_encoding (parsebin));
       break;
+    case PROP_CHAINS_COMPLETED:
+    {
+      gboolean complete = FALSE;
+
+      EXPOSE_LOCK (parsebin);
+      if (parsebin->parse_chain) {
+        complete = gst_parse_chain_is_complete (parsebin->parse_chain);
+      }
+      EXPOSE_UNLOCK (parsebin);
+      g_value_set_boolean (value, complete);
+      break;
+    }
     case PROP_SINK_CAPS:
       g_value_take_boxed (value, gst_parse_bin_get_sink_caps (parsebin));
       break;
