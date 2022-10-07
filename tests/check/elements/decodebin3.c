@@ -24,14 +24,15 @@
 #include <gst/check/gstcheck.h>
 #include <gst/base/gstbaseparse.h>
 
-#include "fakeh264parse.c"
-#include "fakeaacparse.c"
-#include "faketsdemux.c"
+#include "fakeelements/fakeh264parse.c"
+#include "fakeelements/fakeaacparse.c"
+#include "fakeelements/faketsdemux.c"
 
 static struct
 {
   gint pads_added;
   gboolean received_data;
+  gint got_no_more_pads;
 } fixture_demuxer;
 
 #undef FIXTURE
@@ -68,6 +69,12 @@ test_demuxer_buffer_cb (GstPad * pad,
 }
 
 static void
+test_demuxer_no_more_pads_cb (GstElement * gstelement, gpointer user_data)
+{
+  g_atomic_int_inc (&FIXTURE.got_no_more_pads);
+}
+
+static void
 test_demuxer_pad_added_cb (GstElement * dec, GstPad * pad, gpointer user_data)
 {
   GstBin *pipe = user_data;
@@ -85,7 +92,9 @@ test_demuxer_pad_added_cb (GstElement * dec, GstPad * pad, gpointer user_data)
   gst_pad_add_probe (pad, GST_PAD_PROBE_TYPE_BUFFER,
       test_demuxer_buffer_cb, NULL, NULL);
 
-  FIXTURE.pads_added++;
+  g_atomic_int_inc (&FIXTURE.pads_added);
+
+  fail_unless_equals_int (FIXTURE.got_no_more_pads, 0);
 }
 
 static gboolean
@@ -138,15 +147,16 @@ GST_START_TEST (test_demuxer)
 
   g_signal_connect (dec, "pad-added",
       G_CALLBACK (test_demuxer_pad_added_cb), pipe);
-
   g_signal_connect (dec, "autoplug-continue",
       G_CALLBACK (test_demuxer_autoplug_continue_cb), pipe);
+  g_signal_connect (dec, "no-more-pads",
+      G_CALLBACK (test_demuxer_no_more_pads_cb), pipe);
 
   gst_bin_add_many (GST_BIN (pipe), src, filter, dec, NULL);
   gst_element_link_many (src, filter, dec, NULL);
 
   sret = gst_element_set_state (pipe, GST_STATE_PLAYING);
-  fail_unless_equals_int (sret, GST_STATE_CHANGE_ASYNC);
+  fail_unless_equals_int (sret, GST_STATE_CHANGE_SUCCESS);
 
   /* wait for EOS or error */
   msg = gst_bus_timed_pop_filtered (GST_ELEMENT_BUS (pipe),
@@ -159,6 +169,7 @@ GST_START_TEST (test_demuxer)
   gst_object_unref (pipe);
 
   fail_unless_equals_int (FIXTURE.pads_added, 2);
+  fail_unless_equals_int (FIXTURE.got_no_more_pads, 1);
   fail_unless (FIXTURE.received_data);
   GST_INFO ("test finished ok");
 }
@@ -282,7 +293,8 @@ test_parser_negotiation_exec (gint stop_autoplugging_at)
   gst_element_link_many (src, filter, dec, NULL);
 
   sret = gst_element_set_state (pipe, GST_STATE_PLAYING);
-  fail_unless_equals_int (sret, GST_STATE_CHANGE_ASYNC);
+  fail_unless (sret == GST_STATE_CHANGE_SUCCESS ||
+      sret == GST_STATE_CHANGE_ASYNC, "sret = %d");
 
   /* wait for EOS or error */
   msg = gst_bus_timed_pop_filtered (GST_ELEMENT_BUS (pipe),
